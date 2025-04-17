@@ -1,0 +1,13 @@
+{
+  "name": "video-extractor",
+  "version": "1.0.0",
+  "main": "server_use_cookie.js",
+  "scripts": {
+    "start": "node server_use_cookie.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "cors": "^2.8.5",
+    "puppeteer": "^24.6.1"
+  }
+}
