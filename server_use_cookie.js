@@ -5,7 +5,12 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: '*', // Cho phép tất cả origin, hoặc thay bằng domain frontend nếu muốn hạn chế
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type']
+}));
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/api/get-video', async (req, res) => {
