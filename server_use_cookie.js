@@ -5,68 +5,49 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
-
-// ✅ Cho phép CORS từ tất cả origin (hoặc bạn có thể thay bằng domain cụ thể)
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type']
-}));
-
-// ✅ Serve file tĩnh từ thư mục "public"
+app.use(cors({ origin: '*' }));
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*'); // hoặc thay * bằng domain cụ thể
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  next();
+});
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ✅ Route chính lấy video mp4 từ URL
 app.get('/api/get-video', async (req, res) => {
   const pageURL = req.query.url;
-  if (!pageURL) {
-    return res.status(400).json({ error: 'Thiếu URL video' });
-  }
+  if (!pageURL) return res.status(400).json({ error: 'Thiếu URL video' });
 
   try {
     const browser = await puppeteer.launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
 
     const page = await browser.newPage();
-    await page.setViewport({ width: 1280, height: 800 });
-    await page.setJavaScriptEnabled(true);
     await page.setUserAgent(
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/115 Safari/537.36'
     );
 
-    // ✅ Load cookies nếu có
     const cookiePath = path.join(__dirname, 'cookies.json');
     if (fs.existsSync(cookiePath)) {
       const rawCookies = JSON.parse(fs.readFileSync(cookiePath, 'utf-8'));
       const cookies = rawCookies.map(cookie => {
-        if (cookie.sameSite && typeof cookie.sameSite !== 'string') {
-          delete cookie.sameSite;
-        }
+        if (cookie.sameSite && typeof cookie.sameSite !== 'string') delete cookie.sameSite;
         return cookie;
       });
       await page.setCookie(...cookies);
     }
 
     const mp4Urls = [];
-
     page.on('response', async (response) => {
-      try {
-        const url = response.url();
-        const contentType = response.headers()['content-type'] || '';
-        if (url.includes('.mp4') && url.includes('ahcdn') && contentType.includes('video')) {
-          if (!mp4Urls.includes(url)) {
-            console.log('🎯 Bắt được video:', url);
-            mp4Urls.push(url);
-          }
-        }
-      } catch (err) {
-        console.warn('⚠️ Lỗi khi phân tích response:', err.message);
+      const url = response.url();
+      const contentType = response.headers()['content-type'] || '';
+      if (url.includes('.mp4') && url.includes('ahcdn') && contentType.includes('video')) {
+        if (!mp4Urls.includes(url)) mp4Urls.push(url);
       }
     });
 
-    console.log("➡️ Đang truy cập:", pageURL);
     await page.goto(pageURL, { waitUntil: 'networkidle2', timeout: 60000 });
 
     await page.evaluate(() => {
@@ -77,27 +58,17 @@ app.get('/api/get-video', async (req, res) => {
       }
     });
 
-    await new Promise(resolve => setTimeout(resolve, 12000));
+    await new Promise(r => setTimeout(r, 12000));
     await browser.close();
 
     const highQuality = mp4Urls.find(url => url.includes('hq_'));
     const fallback = mp4Urls.find(url => !url.includes('hq_'));
-
-    if (highQuality) {
-      res.json({ videoUrl: highQuality });
-    } else if (fallback) {
-      res.json({ videoUrl: fallback });
-    } else {
-      res.status(404).json({ error: 'Không tìm thấy video .mp4 từ ahcdn!' });
-    }
-
+    res.json({ videoUrl: highQuality || fallback || null });
   } catch (err) {
-    console.error('❌ Lỗi server:', err);
     res.status(500).json({ error: 'Lỗi server', detail: err.message });
   }
 });
 
-// ✅ Railway yêu cầu lắng nghe cổng từ biến môi trường
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`🚀 Server đang chạy tại http://localhost:${PORT}`);
