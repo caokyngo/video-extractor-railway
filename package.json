@@ -5,9 +5,21 @@
   "scripts": {
     "start": "node server_use_cookie.js"
   },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
   "dependencies": {
-    "express": "^5.1.0",
     "cors": "^2.8.5",
-    "puppeteer": "^24.6.1"
+    "express": "^5.1.0",
+    "puppeteer": "^24.6.1",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
+  },
+  "pkg": {
+    "scripts": ["server_use_cookie.js"],
+    "assets": [
+      "cookies.json"
+    ]
   }
 }
