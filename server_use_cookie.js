@@ -21,8 +21,18 @@ app.get('/api/get-video', async (req, res) => {
 
   try {
     const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+  headless: 'new', // ✅ Puppeteer v20+ khuyến nghị
+  args: [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--disable-dev-shm-usage',
+    '--disable-accelerated-2d-canvas',
+    '--no-first-run',
+    '--no-zygote',
+    '--disable-gpu'
+  ]
+});
+
     });
 
     const page = await browser.newPage();
