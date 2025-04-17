@@ -1,25 +1,27 @@
+// server_use_cookie.js
 const express = require('express');
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-extra');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+
+puppeteer.use(StealthPlugin());
 
 const app = express();
+const PORT = process.env.PORT || 8080;
 
-// CORS config để tránh lỗi bị chặn
-const corsOptions = {
+// CORS cho phép truy cập từ tất cả nguồn
+app.use(cors({
   origin: '*',
-  methods: ['GET', 'POST', 'OPTIONS'],
+  methods: ['GET'],
   allowedHeaders: ['Content-Type'],
-};
+}));
 
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
-
-// Serve static files (frontend)
+// Serve static frontend từ thư mục public
 app.use(express.static(path.join(__dirname, 'public')));
 
-// API chính
+// API chính để lấy video
 app.get('/api/get-video', async (req, res) => {
   const pageURL = req.query.url;
   if (!pageURL) return res.status(400).json({ error: 'Thiếu URL video' });
@@ -30,19 +32,20 @@ app.get('/api/get-video', async (req, res) => {
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
+        '--disable-gpu',
         '--disable-dev-shm-usage',
         '--disable-accelerated-2d-canvas',
-        '--no-first-run',
         '--no-zygote',
-        '--disable-gpu'
+        '--single-process',
+        '--no-first-run'
       ]
     });
 
     const page = await browser.newPage();
-    await page.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/115 Safari/537.36'
-    );
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/115 Safari/537.36');
+    await page.setExtraHTTPHeaders({ 'Accept-Language': 'en-US,en;q=0.9' });
 
+    // Đọc cookies nếu tồn tại
     const cookiePath = path.join(__dirname, 'cookies.json');
     if (fs.existsSync(cookiePath)) {
       const rawCookies = JSON.parse(fs.readFileSync(cookiePath, 'utf-8'));
@@ -55,10 +58,14 @@ app.get('/api/get-video', async (req, res) => {
 
     const mp4Urls = [];
     page.on('response', async (response) => {
-      const url = response.url();
-      const contentType = response.headers()['content-type'] || '';
-      if (url.includes('.mp4') && url.includes('ahcdn') && contentType.includes('video')) {
-        if (!mp4Urls.includes(url)) mp4Urls.push(url);
+      try {
+        const url = response.url();
+        const contentType = response.headers()['content-type'] || '';
+        if (url.includes('.mp4') && url.includes('ahcdn') && contentType.includes('video')) {
+          if (!mp4Urls.includes(url)) mp4Urls.push(url);
+        }
+      } catch (err) {
+        console.warn('Lỗi bắt response:', err.message);
       }
     });
 
@@ -72,7 +79,7 @@ app.get('/api/get-video', async (req, res) => {
       }
     });
 
-    await new Promise(r => setTimeout(r, 12000));
+    await new Promise(resolve => setTimeout(resolve, 12000));
     await browser.close();
 
     const highQuality = mp4Urls.find(url => url.includes('hq_'));
@@ -85,8 +92,6 @@ app.get('/api/get-video', async (req, res) => {
   }
 });
 
-// Railway cần port động
-const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`🚀 Server đang chạy tại http://localhost:${PORT}`);
 });
