@@ -13,11 +13,11 @@ const PORT = process.env.PORT || 8080;
 
 // CORS cho phép truy cập từ tất cả nguồn
 app.use(cors({
-  origin: '*',
-  methods: ['GET'],
+  origin: 'https://video-extractor-railway-production.up.railway.app',
+  methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type'],
 }));
-
+app.options('*', cors());
 // Serve static frontend từ thư mục public
 app.use(express.static(path.join(__dirname, 'public')));
 
