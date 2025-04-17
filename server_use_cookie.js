@@ -5,14 +5,18 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
+
+// ✅ Cho phép CORS từ tất cả origin (hoặc bạn có thể thay bằng domain cụ thể)
 app.use(cors({
-  origin: '*', // Cho phép tất cả origin, hoặc thay bằng domain frontend nếu muốn hạn chế
+  origin: '*',
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type']
 }));
 
+// ✅ Serve file tĩnh từ thư mục "public"
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ✅ Route chính lấy video mp4 từ URL
 app.get('/api/get-video', async (req, res) => {
   const pageURL = req.query.url;
   if (!pageURL) {
@@ -22,7 +26,7 @@ app.get('/api/get-video', async (req, res) => {
   try {
     const browser = await puppeteer.launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
 
     const page = await browser.newPage();
@@ -32,6 +36,7 @@ app.get('/api/get-video', async (req, res) => {
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/115 Safari/537.36'
     );
 
+    // ✅ Load cookies nếu có
     const cookiePath = path.join(__dirname, 'cookies.json');
     if (fs.existsSync(cookiePath)) {
       const rawCookies = JSON.parse(fs.readFileSync(cookiePath, 'utf-8'));
@@ -92,6 +97,7 @@ app.get('/api/get-video', async (req, res) => {
   }
 });
 
+// ✅ Railway yêu cầu lắng nghe cổng từ biến môi trường
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`🚀 Server đang chạy tại http://localhost:${PORT}`);
