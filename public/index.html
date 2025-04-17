@@ -1,1 +1,378 @@
-<h2>🚀 Video Extractor đang chạy thành công!</h2>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>🎬 Phát Video Theo Đoạn</title>
+  <style>
+    body {
+      background: #0f0f0f;
+      color: #fff;
+      padding: 2rem;
+      font-family: 'Segoe UI', sans-serif;
+      max-width: 1280px;
+      margin: auto;
+    }
+    input, button {
+      padding: 0.5rem;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+    .input-wrapper {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .input-wrapper input {
+      flex: 1;
+      height: 48px;
+      padding: 0 1rem;
+      border-radius: 10px;
+      background: #1e1e1e;
+      color: #fff;
+      border: 1px solid #444;
+    }
+    .input-wrapper button {
+      height: 48px;
+      padding: 0 1.5rem;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      border-radius: 10px;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s ease-in-out, background 0.3s;
+    }
+    #fetchBtn {
+      background: #fff;
+      color: #000;
+    }
+    #fetchBtn:hover {
+      background: linear-gradient(to right, #f9a8d4, #fff);
+      transform: scale(1.03);
+    }
+    #startBtn {
+      background-color: #48bb78;
+      color: white;
+    }
+    #startBtn:hover {
+      transform: scale(1.03);
+    }
+
+    .segment-box {
+      display: flex;
+      gap: 0.5rem;
+      margin: 0.5rem 0;
+    }
+    .segment-box input {
+      flex: 1;
+      height: 48px;
+      padding: 0 1rem;
+      border-radius: 10px;
+      background: #1e1e1e;
+      color: #fff;
+      border: 1px solid #333;
+    }
+    .delete {
+      background: #c0392b;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 0 1rem;
+    }
+    .delete:hover {
+      background: #e74c3c;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+    .action-buttons button {
+      flex: 1;
+      height: 48px;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 4px 0 rgba(0,0,0,0.3);
+      transition: all 0.15s ease-in-out;
+    }
+    .action-buttons button:active {
+      transform: translateY(4px);
+      box-shadow: none;
+    }
+    #addSegmentBtn { background: #9ca3af; color: #000; }
+    #saveSegmentsBtn { background: #facc15; color: #000; }
+    #loadSegmentsBtn { background: #fbbf24; color: #000; }
+
+    video {
+      display: none;
+      margin-top: 1rem;
+      width: 100%;
+      max-width: 800px;
+      border-radius: 8px;
+      border: 2px solid #facc15;
+      box-shadow: 0 0 10px rgba(255,255,255,0.2);
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes dots {
+      0% { content: ''; }
+      33% { content: '.'; }
+      66% { content: '..'; }
+      100% { content: '...'; }
+    }
+    .dotting::after {
+      content: '';
+      animation: dots 1.2s steps(3, end) infinite;
+    }
+    @keyframes blingBackground {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Popup loading màu trắng - hồng nhạt -->
+<div id="loadingPopup" style="
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+">
+  <div style="
+    padding: 3rem 4rem;
+    border-radius: 20px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 1.5rem;
+    background: linear-gradient(135deg, #fdf2f8, #f9a8d4, #ffffff);
+    background-size: 300% 300%;
+    animation: blingBackground 3s ease infinite;
+    box-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+  ">
+    <div class="spinner" style="
+      width: 48px;
+      height: 48px;
+      border: 5px solid rgba(255,255,255,0.2);
+      border-top: 5px solid #fff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 1rem;
+    "></div>
+    <div class="typing" style="color: #000; font-weight: bold;">
+      Đang lấy thông tin video<span class="dotting"></span>
+    </div>
+  </div>
+</div>
+
+<h2>🎯 Dán Link Trang Video 🎯</h2>
+<div class="input-wrapper">
+  <input type="text" id="sourceURL" placeholder="https://www.boyfriendtv.com/videos/..." />
+  <button id="fetchBtn">🎯 Lấy link MP4</button>
+</div>
+
+<h2>🎬 Nhập link video MP4 & thời gian phát</h2>
+<div class="input-wrapper">
+  <input type="text" id="videoURL" placeholder="Link video MP4" />
+  <button id="startBtn">▶️ Bắt đầu phát</button>
+</div>
+
+<div id="segmentsContainer">
+  <div class="segment-box">
+    <input type="text" placeholder="Nhập 8 số: mmssmmss → 01:30 - 02:10">
+    <button class="delete">Xoá</button>
+  </div>
+</div>
+
+<div class="action-buttons">
+  <button id="addSegmentBtn">+ Thêm đoạn thời gian</button>
+  <button id="saveSegmentsBtn">💾 Lưu mốc thời gian</button>
+  <input type="file" id="loadSegmentsInput" accept=".txt" style="display:none;" />
+  <button id="loadSegmentsBtn">📂 Upload mốc thời gian</button>
+</div>
+
+<div style="display: flex; justify-content: center; margin-top: 1.5rem;">
+  <video id="myVideo" controls muted playsinline>
+    <source id="videoSource" src="" type="video/mp4" />
+    Trình duyệt không hỗ trợ video.
+  </video>
+</div>
+
+<script>
+  document.getElementById('fetchBtn').addEventListener('click', async () => {
+    const pageURL = document.getElementById('sourceURL').value.trim();
+    if (!pageURL) return alert("⚠️ Vui lòng nhập link video nguồn!");
+    const popup = document.getElementById('loadingPopup');
+    popup.style.display = 'flex';
+
+    try {
+      const res = await fetch('https://video-extractor-production.up.railway.app/api/get-video?url=' + encodeURIComponent(pageURL));
+      const data = await res.json();
+      popup.style.display = 'none';
+
+      if (data.videoUrl && data.videoUrl.includes("ahcdn")) {
+        document.getElementById('videoURL').value = data.videoUrl;
+
+        const tempVideo = document.createElement('video');
+        tempVideo.src = data.videoUrl;
+        tempVideo.preload = 'metadata';
+        tempVideo.onloadedmetadata = () => {
+          const duration = Math.floor(tempVideo.duration);
+          const mm = String(Math.floor(duration / 60)).padStart(2, '0');
+          const ss = String(duration % 60).padStart(2, '0');
+          const firstInput = document.querySelector('.segment-box input');
+          if (firstInput) firstInput.value = `00:00 - ${mm}:${ss}`;
+        };
+      } else {
+        alert("❌ Không tìm thấy video .mp4 chất lượng từ ahcdn!");
+      }
+    } catch (e) {
+      popup.style.display = 'none';
+      alert("❌ Lỗi khi lấy video. Kiểm tra server hoặc đường dẫn.");
+    }
+  });
+
+  document.getElementById('startBtn').onclick = () => {
+    const videoURL = document.getElementById('videoURL').value.trim();
+    if (!videoURL.includes('.mp4')) return alert("⚠️ Vui lòng nhập link hợp lệ!");
+
+    const segments = [];
+    document.querySelectorAll('.segment-box input').forEach(input => {
+      const match = input.value.match(/(\d{2}):(\d{2}) - (\d{2}):(\d{2})/);
+      if (match) {
+        const start = parseInt(match[1]) * 60 + parseInt(match[2]);
+        const end = parseInt(match[3]) * 60 + parseInt(match[4]);
+        if (start < end) segments.push({ start, end });
+      }
+    });
+
+    const video = document.getElementById('myVideo');
+    const source = document.getElementById('videoSource');
+    source.src = videoURL;
+    video.load();
+    video.style.display = 'block';
+
+    let current = 0;
+    if (!segments.length) {
+      video.onended = () => { video.currentTime = 0; video.play(); };
+      return video.play();
+    }
+
+    video.onloadedmetadata = () => {
+      video.currentTime = segments[current].start;
+      video.play();
+    };
+
+    if (window.segmentInterval) clearInterval(window.segmentInterval);
+    window.segmentInterval = setInterval(() => {
+      if (video.paused || video.ended || !segments.length) return;
+      if (video.currentTime >= segments[current].end) {
+        current++;
+        if (current < segments.length) {
+          video.currentTime = segments[current].start;
+        } else {
+          current = 0;
+          video.currentTime = segments[0].start;
+        }
+      }
+    }, 200);
+  };
+
+  document.getElementById('addSegmentBtn').onclick = () => {
+    const container = document.getElementById('segmentsContainer');
+    const box = document.createElement('div');
+    box.className = 'segment-box';
+
+    const input = document.createElement('input');
+    input.placeholder = 'Nhập 8 số: mmssmmss → 01:30 - 02:10';
+    input.addEventListener('input', (e) => {
+      const raw = e.target.value.replace(/\D/g, '').slice(0, 8);
+      if (raw.length === 8) {
+        e.target.value = `${raw.slice(0,2)}:${raw.slice(2,4)} - ${raw.slice(4,6)}:${raw.slice(6,8)}`;
+      }
+    });
+
+    const del = document.createElement('button');
+    del.textContent = 'Xoá';
+    del.className = 'delete';
+
+    box.appendChild(input);
+    box.appendChild(del);
+    container.appendChild(box);
+  };
+
+  // 🛡 Logic xoá giữ lại ít nhất một mốc
+  document.getElementById('segmentsContainer').addEventListener('click', (e) => {
+    if (e.target.classList.contains('delete')) {
+      const boxes = document.querySelectorAll('.segment-box');
+      if (boxes.length <= 1) {
+        alert("⚠️ Phải có ít nhất một mốc thời gian!");
+        return;
+      }
+      e.target.closest('.segment-box').remove();
+    }
+  });
+
+  document.getElementById('saveSegmentsBtn').onclick = () => {
+    const lines = [];
+    document.querySelectorAll('.segment-box input').forEach(input => {
+      if (input.value.match(/\d{2}:\d{2} - \d{2}:\d{2}/)) lines.push(input.value);
+    });
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'segments.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  document.getElementById('loadSegmentsBtn').onclick = () => {
+    document.getElementById('loadSegmentsInput').click();
+  };
+
+  document.getElementById('loadSegmentsInput').onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const lines = event.target.result.split('\n').map(l => l.trim()).filter(Boolean);
+      const container = document.getElementById('segmentsContainer');
+      container.innerHTML = '';
+      lines.forEach(line => {
+        const box = document.createElement('div');
+        box.className = 'segment-box';
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = line;
+
+        const del = document.createElement('button');
+        del.textContent = 'Xoá';
+        del.className = 'delete';
+
+        box.appendChild(input);
+        box.appendChild(del);
+        container.appendChild(box);
+      });
+    };
+    reader.readAsText(file);
+  };
+</script>
+</body>
+</html>
