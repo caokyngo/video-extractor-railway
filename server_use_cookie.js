@@ -5,6 +5,8 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
+
+// CORS config để tránh lỗi bị chặn
 const corsOptions = {
   origin: '*',
   methods: ['GET', 'POST', 'OPTIONS'],
@@ -13,26 +15,27 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
+
+// Serve static files (frontend)
 app.use(express.static(path.join(__dirname, 'public')));
 
+// API chính
 app.get('/api/get-video', async (req, res) => {
   const pageURL = req.query.url;
   if (!pageURL) return res.status(400).json({ error: 'Thiếu URL video' });
 
   try {
     const browser = await puppeteer.launch({
-  headless: 'new', // ✅ Puppeteer v20+ khuyến nghị
-  args: [
-    '--no-sandbox',
-    '--disable-setuid-sandbox',
-    '--disable-dev-shm-usage',
-    '--disable-accelerated-2d-canvas',
-    '--no-first-run',
-    '--no-zygote',
-    '--disable-gpu'
-  ]
-});
-
+      headless: 'new',
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--disable-gpu'
+      ]
     });
 
     const page = await browser.newPage();
@@ -75,11 +78,14 @@ app.get('/api/get-video', async (req, res) => {
     const highQuality = mp4Urls.find(url => url.includes('hq_'));
     const fallback = mp4Urls.find(url => !url.includes('hq_'));
     res.json({ videoUrl: highQuality || fallback || null });
+
   } catch (err) {
+    console.error('❌ Lỗi server:', err);
     res.status(500).json({ error: 'Lỗi server', detail: err.message });
   }
 });
 
+// Railway cần port động
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`🚀 Server đang chạy tại http://localhost:${PORT}`);
