@@ -1,6 +1,11 @@
-FROM node:18
+FROM node:18-slim
+
 WORKDIR /app
+
 COPY . .
+
 RUN npm install
-ENV PORT=8080
-CMD ["node", "server_use_cookie.js"]
+
+EXPOSE 8080
+
+CMD ["npm", "start"]
