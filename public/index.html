@@ -221,7 +221,7 @@
     popup.style.display = 'flex';
 
     try {
-      const res = await fetch('https://video-extractor-production.up.railway.app/api/get-video?url=' + encodeURIComponent(pageURL));
+      const res = await fetch('https://video-extractor-backend.onrender.com/api/get-video?url=' + encodeURIComponent(pageURL));
       const data = await res.json();
       popup.style.display = 'none';
 
